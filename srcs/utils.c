@@ -6,37 +6,29 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 15:36:23 by anebbou           #+#    #+#             */
-/*   Updated: 2025/03/27 15:41:20 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/05/12 13:52:59 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
+#include <sys/time.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
-/*
-** get_time:
-** - Uses gettimeofday to get the current time.
-** - Converts the time to milliseconds.
-** - This is used for timestamps when logging philosopher events.
-*/
-long get_time(void)
+long	get_time(void)
 {
-	struct timeval tv;
-	long time_in_ms;
+	struct timeval	tv;
+	long			time_in_ms;
 
 	gettimeofday(&tv, NULL);
 	time_in_ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 	return (time_in_ms);
 }
 
-/*
-** print_status:
-** - Locks the print mutex to ensure only one thread prints at a time.
-** - Calculates the timestamp (current time - start time) and prints the message.
-** - Unlocks the mutex after printing.
-*/
-void print_status(t_data *data, int id, char *msg)
+void	print_status(t_data *data, int id, char *msg)
 {
-	long timestamp;
+	long	timestamp;
 
 	pthread_mutex_lock(&data->print_mutex);
 	timestamp = get_time() - data->start_time;
@@ -45,66 +37,22 @@ void print_status(t_data *data, int id, char *msg)
 	pthread_mutex_unlock(&data->print_mutex);
 }
 
-/*
-** monitor_routine:
-** - Runs in a separate thread to check all philosophers.
-** - If a philosopher hasn’t eaten within time_to_die, prints that the philosopher died
-**   and stops the simulation.
-** - Also checks if all philosophers have eaten the required number of meals (if specified).
-*/
-void *monitor_routine(void *arg)
+static int	all_meals_eaten(t_data *data)
 {
-	t_data *data;
-	int i;
+	int	j;
 
-	data = (t_data *)arg;
-	while (1)
+	j = 0;
+	while (j < data->nb_philos)
 	{
-		i = 0;
-		while (i < data->nb_philos)
-		{
-			pthread_mutex_lock(&data->check_mutex);
-			if ((get_time() - data->philos[i].last_meal) > data->time_to_die)
-			{
-				print_status(data, data->philos[i].id, "died");
-				data->stop = 1;
-				pthread_mutex_unlock(&data->check_mutex);
-				return (NULL);
-			}
-			// Check if the optional meal count has been reached for all philosophers.
-			if (data->nb_meals != -1)
-			{
-				int done = 1;
-				for (int j = 0; j < data->nb_philos; j++)
-				{
-					if (data->philos[j].meals_eaten < data->nb_meals)
-					{
-						done = 0;
-						break;
-					}
-				}
-				if (done)
-				{
-					data->stop = 1;
-					pthread_mutex_unlock(&data->check_mutex);
-					return (NULL);
-				}
-			}
-			pthread_mutex_unlock(&data->check_mutex);
-			usleep(1000);
-			i++;
-		}
+		if (data->philos[j].meals_eaten < data->nb_meals)
+			return (0);
+		j++;
 	}
-	return (NULL);
+	return (1);
 }
 
-/*
-** init_data:
-** - Reads command-line arguments to set the simulation parameters.
-** - Allocates memory for the philosopher array and the fork mutex array.
-** - Initializes all fork mutexes and the print and check mutexes.
-*/
-int init_data(t_data *data, int ac, char **av)
+/* --- Helpers for init_data below --- */
+static int	parse_arguments(t_data *data, int ac, char **av)
 {
 	data->nb_philos = atoi(av[1]);
 	data->time_to_die = atol(av[2]);
@@ -115,17 +63,30 @@ int init_data(t_data *data, int ac, char **av)
 	else
 		data->nb_meals = -1;
 	data->stop = 0;
-	data->start_time = get_time();
+	return (0);
+}
+
+static int	allocate_resources(t_data *data)
+{
 	data->philos = malloc(sizeof(t_philo) * data->nb_philos);
 	if (!data->philos)
 		return (1);
 	data->forks = malloc(sizeof(pthread_mutex_t) * data->nb_philos);
 	if (!data->forks)
 		return (1);
-	for (int i = 0; i < data->nb_philos; i++)
+	return (0);
+}
+
+static int	init_mutexes(t_data *data)
+{
+	int	i;
+
+	i = 0;
+	while (i < data->nb_philos)
 	{
 		if (pthread_mutex_init(&data->forks[i], NULL) != 0)
 			return (1);
+		i++;
 	}
 	if (pthread_mutex_init(&data->print_mutex, NULL) != 0)
 		return (1);
@@ -134,16 +95,67 @@ int init_data(t_data *data, int ac, char **av)
 	return (0);
 }
 
-/*
-** init_philos:
-** - Initializes each philosopher:
-**   - Sets the philosopher's ID.
-**   - Sets the initial number of meals eaten and the time of the last meal.
-**   - Assigns the correct left and right forks (the right fork wraps around for the last philosopher).
-*/
-int init_philos(t_data *data)
+int	init_data(t_data *data, int ac, char **av)
 {
-	int i;
+	int	ret;
+
+	ret = parse_arguments(data, ac, av);
+	if (ret)
+		return (1);
+	data->start_time = get_time();
+	ret = allocate_resources(data);
+	if (ret)
+		return (1);
+	ret = init_mutexes(data);
+	if (ret)
+		return (1);
+	return (0);
+}
+
+static int	check_philosopher(t_data *data, int idx)
+{
+	int	ret;
+
+	ret = 0;
+	pthread_mutex_lock(&data->check_mutex);
+	if ((get_time() - data->philos[idx].last_meal) > data->time_to_die)
+	{
+		print_status(data, data->philos[idx].id, "died");
+		data->stop = 1;
+		ret = 1;
+	}
+	else if (data->nb_meals != -1 && all_meals_eaten(data))
+	{
+		data->stop = 1;
+		ret = 1;
+	}
+	pthread_mutex_unlock(&data->check_mutex);
+	return (ret);
+}
+
+void	*monitor_routine(void *arg)
+{
+	t_data	*data;
+	int		i;
+
+	data = (t_data *)arg;
+	while (1)
+	{
+		i = 0;
+		while (i < data->nb_philos)
+		{
+			if (check_philosopher(data, i))
+				return (NULL);
+			usleep(1000);
+			i++;
+		}
+	}
+	return (NULL);
+}
+
+int	init_philos(t_data *data)
+{
+	int	i;
 
 	i = 0;
 	while (i < data->nb_philos)
@@ -159,14 +171,9 @@ int init_philos(t_data *data)
 	return (0);
 }
 
-/*
-** cleanup:
-** - Destroys all fork mutexes and the print and check mutexes.
-** - Frees the allocated memory for the forks and philosophers.
-*/
-void cleanup(t_data *data)
+void	cleanup(t_data *data)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (i < data->nb_philos)
