@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/12 14:19:43 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/14 18:16:39 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/05/22 21:27:58 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,43 +26,29 @@ static int	all_meals_eaten(t_data *data)
 	return (1);
 }
 
-static int	check_philosopher(t_data *data, int idx)
-{
-	int	ret;
-
-	ret = 0;
-	pthread_mutex_lock(&data->check_mutex);
-	if ((get_time() - data->philos[idx].last_meal) > data->time_to_die)
-	{
-		print_status(data, data->philos[idx].id, "died");
-		data->stop = 1;
-		ret = 1;
-	}
-	else if (data->nb_meals != -1 && all_meals_eaten(data))
-	{
-		data->stop = 1;
-		ret = 1;
-	}
-	pthread_mutex_unlock(&data->check_mutex);
-	return (ret);
-}
-
 void	*monitor_routine(void *arg)
 {
 	t_data	*data;
 	int		i;
 
 	data = (t_data *)arg;
-	while (1)
+	while (!data->stop)
 	{
+		pthread_mutex_lock(&data->check_mutex);
 		i = 0;
-		while (i < data->nb_philos)
+		while (i < data->nb_philos && !data->stop)
 		{
-			if (check_philosopher(data, i))
-				return (NULL);
-			usleep(1000);
+			if (get_time() - data->philos[i].last_meal > data->time_to_die)
+			{
+				print_status(data, data->philos[i].id, "died");
+				data->stop = 1;
+			}
 			i++;
 		}
+		if (!data->stop && data->nb_meals != -1 && all_meals_eaten(data))
+			data->stop = 1;
+		pthread_mutex_unlock(&data->check_mutex);
+		usleep(1000);
 	}
 	return (NULL);
 }

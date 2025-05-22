@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/12 14:15:08 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/14 18:16:13 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/05/22 20:54:54 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,20 @@
 
 static int	parse_arguments(t_data *data, int ac, char **av)
 {
-	data->nb_philos = atoi(av[1]);
-	data->time_to_die = atol(av[2]);
-	data->time_to_eat = atol(av[3]);
-	data->time_to_sleep = atol(av[4]);
+	data->nb_philos = ft_atol_safe(av[1]);
+	data->time_to_die = ft_atol_safe(av[2]);
+	data->time_to_eat = ft_atol_safe(av[3]);
+	data->time_to_sleep = ft_atol_safe(av[4]);
 	if (ac == 6)
-		data->nb_meals = atoi(av[5]);
+		data->nb_meals = ft_atol_safe(av[5]);
 	else
 		data->nb_meals = -1;
+	if (data->nb_philos <= 0 || data->nb_philos > INT_MAX
+		|| data->time_to_die <= 0 || data->time_to_die > INT_MAX
+		|| data->time_to_eat <= 0 || data->time_to_eat > INT_MAX
+		|| data->time_to_sleep <= 0 || data->time_to_sleep > INT_MAX
+		|| (ac == 6 && (data->nb_meals <= 0 || data->nb_meals > INT_MAX)))
+		return (1);
 	data->stop = 0;
 	return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 15:32:25 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/12 13:35:12 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/05/22 20:49:08 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,7 @@ int	main(int ac, char **av)
 		return (1);
 	if (launch_threads(&data))
 		return (1);
+	usleep(200);
 	if (pthread_create(
 			&monitor,
 			NULL,

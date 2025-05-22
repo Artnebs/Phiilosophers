@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 15:32:04 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/12 14:20:44 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/05/22 20:42:58 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 # include <stdlib.h>
 # include <sys/time.h>
 # include <unistd.h>
+# include <limits.h>
 
 typedef struct s_data	t_data;
 
@@ -62,5 +63,10 @@ void	eat(t_philo *philo);
 long	get_time(void);
 void	print_status(t_data *data, int id, char *msg);
 void	cleanup(t_data *data);
+void	safe_sleep(long time_in_ms, t_data *data);
+
+long	ft_atol_safe(const char *str);
+int		is_number(const char *str);
+int		ft_strcmp(char *s1, char *s2);
 
 #endif

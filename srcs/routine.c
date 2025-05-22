@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/12 14:19:20 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/14 18:17:01 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/05/22 21:22:18 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,19 +18,19 @@ void	*t_philosopher(void *arg)
 
 	philo = (t_philo *)arg;
 	if (philo->id % 2 == 0)
-		usleep(100);
-	while (1)
+		safe_sleep(50, philo->data);
+	while (!philo->data->stop)
 	{
-		if (philo->data->stop)
-			break ;
 		take_forks(philo);
-		if (philo->left_fork == philo->right_fork)
+		if (philo->data->nb_philos == 1)
 			break ;
 		eat(philo);
 		release_forks(philo);
 		print_status(philo->data, philo->id, "is sleeping");
-		usleep(philo->data->time_to_sleep * 1000);
+		safe_sleep(philo->data->time_to_sleep, philo->data);
 		print_status(philo->data, philo->id, "is thinking");
 	}
+	if (philo->data->nb_philos > 1)
+		release_forks(philo);
 	return (NULL);
 }
