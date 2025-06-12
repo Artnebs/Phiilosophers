@@ -26,6 +26,17 @@ static int	all_meals_eaten(t_data *data)
 	return (1);
 }
 
+static int	check_death(t_data *data, int i)
+{
+	if (get_time() - data->philos[i].last_meal > data->time_to_die)
+	{
+		print_status(data, data->philos[i].id, "died");
+		data->stop = 1;
+		return (1);
+	}
+	return (0);
+}
+
 void	*monitor_routine(void *arg)
 {
 	t_data	*data;
@@ -38,11 +49,8 @@ void	*monitor_routine(void *arg)
 		i = 0;
 		while (i < data->nb_philos && !data->stop)
 		{
-			if (get_time() - data->philos[i].last_meal > data->time_to_die)
-			{
-				print_status(data, data->philos[i].id, "died");
-				data->stop = 1;
-			}
+			if (check_death(data, i))
+				break ;
 			i++;
 		}
 		if (!data->stop && data->nb_meals != -1 && all_meals_eaten(data))

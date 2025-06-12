@@ -14,6 +14,15 @@
 
 static int	parse_arguments(t_data *data, int ac, char **av)
 {
+	int	i;
+
+	i = 1;
+	while (i < ac)
+	{
+		if (!is_number(av[i]))
+			return (1);
+		i++;
+	}
 	data->nb_philos = ft_atol_safe(av[1]);
 	data->time_to_die = ft_atol_safe(av[2]);
 	data->time_to_eat = ft_atol_safe(av[3]);
@@ -39,7 +48,10 @@ static int	allocate_resources(t_data *data)
 		return (1);
 	data->forks = malloc(sizeof(pthread_mutex_t) * data->nb_philos);
 	if (!data->forks)
+	{
+		free(data->philos);
 		return (1);
+	}
 	return (0);
 }
 
@@ -51,13 +63,24 @@ static int	init_mutexes(t_data *data)
 	while (i < data->nb_philos)
 	{
 		if (pthread_mutex_init(&data->forks[i], NULL) != 0)
+		{
+			while (--i >= 0)
+				pthread_mutex_destroy(&data->forks[i]);
+			free(data->forks);
+			free(data->philos);
 			return (1);
+		}
 		i++;
 	}
-	if (pthread_mutex_init(&data->print_mutex, NULL) != 0)
+	if (pthread_mutex_init(&data->print_mutex, NULL) != 0
+		|| pthread_mutex_init(&data->check_mutex, NULL) != 0)
+	{
+		while (--i >= 0)
+			pthread_mutex_destroy(&data->forks[i]);
+		free(data->forks);
+		free(data->philos);
 		return (1);
-	if (pthread_mutex_init(&data->check_mutex, NULL) != 0)
-		return (1);
+	}
 	return (0);
 }
 

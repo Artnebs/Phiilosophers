@@ -38,6 +38,11 @@ void	take_forks(t_philo *philo)
 
 void	release_forks(t_philo *philo)
 {
+	if (philo->data->nb_philos == 1)
+	{
+		pthread_mutex_unlock(philo->left_fork);
+		return ;
+	}
 	pthread_mutex_unlock(philo->left_fork);
 	pthread_mutex_unlock(philo->right_fork);
 }
@@ -50,4 +55,11 @@ void	eat(t_philo *philo)
 	pthread_mutex_unlock(&philo->data->check_mutex);
 	print_status(philo->data, philo->id, "is eating");
 	safe_sleep(philo->data->time_to_eat, philo->data);
+}
+
+void	sleep_think(t_philo *philo)
+{
+	print_status(philo->data, philo->id, "is sleeping");
+	safe_sleep(philo->data->time_to_sleep, philo->data);
+	print_status(philo->data, philo->id, "is thinking");
 }
