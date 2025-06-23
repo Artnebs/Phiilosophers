@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/12 14:19:43 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/22 21:27:58 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/06/23 12:18:08 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,8 @@ void	*monitor_routine(void *arg)
 				break ;
 			i++;
 		}
-		if (!atomic_load(&data->stop) && data->nb_meals != -1 && all_meals_eaten(data))
+		if (!atomic_load(&data->stop)
+			&& data->nb_meals != -1 && all_meals_eaten(data))
 			atomic_store(&data->stop, 1);
 		pthread_mutex_unlock(&data->check_mutex);
 		usleep(1000);

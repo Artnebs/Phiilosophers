@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 15:32:04 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/22 20:42:58 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/06/23 12:18:17 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ struct s_data
 	long			time_to_sleep;
 	int				nb_meals;
 	long			start_time;
-	atomic_int      stop;
+	atomic_int		stop;
 	t_philo			*philos;
 	pthread_mutex_t	*forks;
 	pthread_mutex_t	print_mutex;
