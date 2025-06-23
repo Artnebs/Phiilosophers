@@ -37,7 +37,7 @@ static int	parse_arguments(t_data *data, int ac, char **av)
 		|| data->time_to_sleep <= 0 || data->time_to_sleep > INT_MAX
 		|| (ac == 6 && (data->nb_meals <= 0 || data->nb_meals > INT_MAX)))
 		return (1);
-	data->stop = 0;
+	atomic_init(&data->stop, 0);
 	return (0);
 }
 

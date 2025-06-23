@@ -19,6 +19,7 @@
 # include <sys/time.h>
 # include <unistd.h>
 # include <limits.h>
+# include <stdatomic.h>
 
 typedef struct s_data	t_data;
 
@@ -41,7 +42,7 @@ struct s_data
 	long			time_to_sleep;
 	int				nb_meals;
 	long			start_time;
-	int				stop;
+	atomic_int      stop;
 	t_philo			*philos;
 	pthread_mutex_t	*forks;
 	pthread_mutex_t	print_mutex;

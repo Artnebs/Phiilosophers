@@ -9,9 +9,9 @@ INC_DIR     = includes
 OBJ_DIR     = obj
 
 CC          = gcc
-CFLAGS      = -Wall -Wextra -Werror -g
+CFLAGS      = -Wall -Wextra -Werror -std=c11 -g
 INCLUDES    = -I$(INC_DIR)
-LDFLAGS     =
+LDFLAGS     = -pthread
 
 SRCS        = $(SRC_DIR)/main.c \
               $(SRC_DIR)/actions.c \

@@ -19,12 +19,12 @@ void	*t_philosopher(void *arg)
 	philo = (t_philo *)arg;
 	if (philo->id % 2 == 0)
 		usleep(1000);
-	while (!philo->data->stop)
+	while (!atomic_load(&philo->data->stop))
 	{
 		take_forks(philo);
 		eat(philo);
 		release_forks(philo);
-		if (philo->data->stop)
+		if (atomic_load(&philo->data->stop))
 			break ;
 		sleep_think(philo);
 	}

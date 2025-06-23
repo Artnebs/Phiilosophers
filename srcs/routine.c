@@ -19,7 +19,7 @@ void	*t_philosopher(void *arg)
 	philo = (t_philo *)arg;
 	if (philo->id % 2 == 0)
 		safe_sleep(50, philo->data);
-	while (!philo->data->stop)
+	while (!atomic_load(&philo->data->stop))
 	{
 		take_forks(philo);
 		if (philo->data->nb_philos == 1)

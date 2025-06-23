@@ -31,7 +31,7 @@ static int	check_death(t_data *data, int i)
 	if (get_time() - data->philos[i].last_meal > data->time_to_die)
 	{
 		print_status(data, data->philos[i].id, "died");
-		data->stop = 1;
+		atomic_store(&data->stop, 1);
 		return (1);
 	}
 	return (0);
@@ -43,18 +43,18 @@ void	*monitor_routine(void *arg)
 	int		i;
 
 	data = (t_data *)arg;
-	while (!data->stop)
+	while (!atomic_load(&data->stop))
 	{
 		pthread_mutex_lock(&data->check_mutex);
 		i = 0;
-		while (i < data->nb_philos && !data->stop)
+		while (i < data->nb_philos && !atomic_load(&data->stop))
 		{
 			if (check_death(data, i))
 				break ;
 			i++;
 		}
-		if (!data->stop && data->nb_meals != -1 && all_meals_eaten(data))
-			data->stop = 1;
+		if (!atomic_load(&data->stop) && data->nb_meals != -1 && all_meals_eaten(data))
+			atomic_store(&data->stop, 1);
 		pthread_mutex_unlock(&data->check_mutex);
 		usleep(1000);
 	}

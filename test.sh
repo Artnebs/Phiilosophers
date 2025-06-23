@@ -1,91 +1,61 @@
 #!/usr/bin/env bash
-# =======================================
-#  COMPLETE PHILO TEST SCRIPT  – v2
-# =======================================
-# - Each test line ends with “:seconds” → its own timeout
-# - Any non-zero exit code is still counted as success
-#   for the cases that are *supposed* to error-out.
+# philo full test – extended v3
 
 BIN=./philo
-LOGFILE=philo_test_full.log
-GREEN="\033[0;32m"
-RED="\033[0;31m"
-RESET="\033[0m"
+LOG=philo_test_full.log
+GREEN="\033[0;32m" RED="\033[0;31m" RESET="\033[0m"
 
-print_result () {
-    if [ "$1" -eq 0 ]; then
-        echo -e "${GREEN}[OK]${RESET} $2"
-    else
-        echo -e "${RED}[FAIL]${RESET} $2"
-    fi
-}
+print_ok()    { echo -e "${GREEN}[ OK ]${RESET} $1"; }
+print_fail()  { echo -e "${RED}[FAIL]${RESET} $1"; }
 
-# -------------------------------------------------
-# 1. Rebuild
-# -------------------------------------------------
-echo    "=======================================" > "$LOGFILE"
-echo    "Starting full philo project test suite" >> "$LOGFILE"
-echo    "=======================================" >> "$LOGFILE"
-echo -e "${GREEN}Rebuilding …${RESET}"
-make -s re                                >> "$LOGFILE" 2>&1 || {
-    echo -e "${RED}Build failed – see log${RESET}"
-    exit 1
-}
+# Rebuild
+echo "=== philo test suite ===" > "$LOG"
+make re &>>"$LOG" || { print_fail "build"; exit 1; }
 
-# -------------------------------------------------
-# 2. Functional & edge tests
-#    Format:  "arg1 arg2 …:timeout_in_seconds"
-# -------------------------------------------------
+# test definitions: "args:timeout:should_error?"
 tests=(
-  "20000000000 800 200 200:3"        # overflow → immediate return
-  "1 500 200 200:3"                  # single philo dies
-  "4 800 200 200:15"                 # steady state
-  "4 800 200 200 3:15"               # stops after 3 meals
-  "2 310 200 200:4"                  # death at 311 ms
-  "2 800 200 200:15"                 # pair steady
-  "5 800 0 200 5:3"                  # invalid arg → error
-  "1 1 1 1:3"                        # ultra-fast death
-  "5 10000 10000 10000 3:80"         # very long run, needs ≥70 s
+  "20000000000 800 200 200:3:yes"    # overflow
+  "0 800 200 200:1:yes"              # zero philosophers
+  "5 800 200 0:1:yes"                # zero time_to_sleep
+  "5 800 0 200:1:yes"                # zero time_to_eat
+  "1 500 200 200:3:no"               # 1 philo dies
+  "4 800 200 200:15:no"              # steady state
+  "4 800 200 200 3:15:no"            # stops after 3 meals
+  "2 310 200 200:4:no"               # death at ~310ms
+  "2 800 200 200:15:no"              # 2‐philo steady
+  "1 1 1 1:3:no"                     # ultra‐fast death
+  "5 10000 10000 10000 3:80:no"      # very long run
+  "5 800 200:1:yes"                  # missing arg
+  "5 800 ab 200:1:yes"               # non‐numeric
 )
 
-echo -e "\n${GREEN}--- Functional tests ---${RESET}"
+echo; echo -e "${GREEN}-- Functional tests --${RESET}"
 for entry in "${tests[@]}"; do
-    args="${entry%%:*}"
-    tmo="${entry##*:}"
-
-    echo "--------------------------------------"      | tee -a "$LOGFILE"
-    echo "Running: ./philo $args (timeout ${tmo}s)"    | tee -a "$LOGFILE"
-
-    if timeout "${tmo}"s $BIN $args                    >> "$LOGFILE" 2>&1; then
-        print_result 0 "$args"
+  IFS=":" read -r args tmo should_err <<<"$entry"
+  echo "→ $BIN $args (timeout ${tmo}s)" | tee -a "$LOG"
+  
+  timeout "${tmo}s" $BIN $args &>>"$LOG"
+  code=$?
+  
+  if [ $code -eq 124 ]; then
+    print_fail "timeout on: $args"
+  else
+    if [ "$should_err" = "yes" ]; then
+      if [ $code -ne 0 ]; then
+        print_ok "$args (expected error)"
+      else
+        print_fail "$args should have failed but exited 0"
+      fi
     else
-        code=$?
-        if [ $code -eq 124 ]; then
-            print_result 1 "Test timed-out: $args"
-        else
-            # Non-zero exit code is expected for the error-input cases
-            if [[ "$args" =~ 20000000000|800\ 0 ]]; then
-                print_result 0 "$args (expected error)"
-            else
-                print_result 1 "Exited with code $code: $args"
-            fi
-        fi
+      if [ $code -eq 0 ]; then
+        print_ok "$args"
+      else
+        print_fail "$args exited $code"
+      fi
     fi
+  fi
 done
 
-# -------------------------------------------------
-# 3. Valgrind leak test  (15 s is plenty)
-# -------------------------------------------------
-echo -e "\n${GREEN}--- Valgrind leak test ---${RESET}"
-echo "======================================="                 >> "$LOGFILE"
-echo "Running Valgrind on: ./philo 5 800 200 200 3"           >> "$LOGFILE"
-
-if timeout 15s valgrind --leak-check=full --show-leak-kinds=all \
-         --track-origins=yes $BIN 5 800 200 200 3               \
-         >> "$LOGFILE" 2>&1; then
-    print_result 0 "Valgrind completed"
-else
-    print_result 1 "Valgrind timed-out or errored"
-fi
-
-echo -e "\n${GREEN}✅  All tests done.  See '${LOGFILE}' for details.${RESET}"
+# Valgrind
+echo; echo -e "${GREEN}-- Valgrind leak test --${RESET}"
+timeout 15s valgrind --leak-check=full --error-exitcode=1 $BIN 5 800

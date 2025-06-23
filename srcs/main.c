@@ -14,7 +14,7 @@
 
 static int	handle_thread_error(t_data *data, int i)
 {
-	data->stop = 1;
+	atomic_store(&data->stop, 1);
 	while (--i >= 0)
 		pthread_join(data->philos[i].thread, NULL);
 	return (1);
@@ -75,7 +75,7 @@ int	main(int ac, char **av)
 	usleep(200);
 	if (pthread_create(&monitor, NULL, monitor_routine, &data) != 0)
 	{
-		data.stop = 1;
+		atomic_store(&data.stop, 1);
 		join_threads(&data);
 		cleanup(&data);
 		return (1);

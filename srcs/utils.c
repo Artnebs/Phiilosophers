@@ -28,7 +28,7 @@ void	print_status(t_data *data, int id, char *msg)
 
 	pthread_mutex_lock(&data->print_mutex);
 	timestamp = get_time() - data->start_time;
-	if (!data->stop || (msg && !ft_strcmp(msg, "died")))
+	if (!atomic_load(&data->stop) || (msg && !ft_strcmp(msg, "died")))
 		printf("%ld %d %s\n", timestamp, id, msg);
 	pthread_mutex_unlock(&data->print_mutex);
 }
@@ -54,6 +54,6 @@ void	safe_sleep(long time_in_ms, t_data *data)
 	long	start;
 
 	start = get_time();
-	while (!data->stop && (get_time() - start) < time_in_ms)
+	while (!atomic_load(&data->stop) && (get_time() - start) < time_in_ms)
 		usleep(500);
 }
