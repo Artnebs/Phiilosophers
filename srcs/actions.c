@@ -12,28 +12,44 @@
 
 #include "philo.h"
 
-void	take_forks(t_philo *philo)
+static int	lock_fork(pthread_mutex_t *fork, t_data *data)
+{
+	while (!atomic_load(&data->stop))
+	{
+		if (pthread_mutex_trylock(fork) == 0)
+			return (1);
+		usleep(100);
+	}
+	return (0);
+}
+
+int	take_forks(t_philo *philo)
 {
 	if (philo->data->nb_philos == 1)
 	{
-		pthread_mutex_lock(philo->left_fork);
-		print_status(philo->data, philo->id, "has taken a fork");
-		return ;
+		if (!lock_fork(philo->left_fork, philo->data))
+			return (0);
+		return (print_status(philo->data, philo->id, "has taken a fork"), 1);
 	}
 	if (philo->id % 2 == 0)
 	{
-		pthread_mutex_lock(philo->right_fork);
+		if (!lock_fork(philo->right_fork, philo->data))
+			return (0);
 		print_status(philo->data, philo->id, "has taken a fork");
-		pthread_mutex_lock(philo->left_fork);
+		if (!lock_fork(philo->left_fork, philo->data))
+			return (pthread_mutex_unlock(philo->right_fork), 0);
 		print_status(philo->data, philo->id, "has taken a fork");
 	}
 	else
 	{
-		pthread_mutex_lock(philo->left_fork);
+		if (!lock_fork(philo->left_fork, philo->data))
+			return (0);
 		print_status(philo->data, philo->id, "has taken a fork");
-		pthread_mutex_lock(philo->right_fork);
+		if (!lock_fork(philo->right_fork, philo->data))
+			return (pthread_mutex_unlock(philo->left_fork), 0);
 		print_status(philo->data, philo->id, "has taken a fork");
 	}
+	return (1);
 }
 
 void	release_forks(t_philo *philo)

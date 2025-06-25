@@ -21,9 +21,15 @@ void	*t_philosopher(void *arg)
 		safe_sleep(50, philo->data);
 	while (!atomic_load(&philo->data->stop))
 	{
-		take_forks(philo);
+		if (!take_forks(philo))
+			break ;
 		if (philo->data->nb_philos == 1)
 			break ;
+		if (atomic_load(&philo->data->stop))
+		{
+			release_forks(philo);
+			break ;
+		}
 		eat(philo);
 		release_forks(philo);
 		print_status(philo->data, philo->id, "is sleeping");

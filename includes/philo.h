@@ -57,7 +57,7 @@ int		init_philos(t_data *data);
 void	*t_philosopher(void *arg);
 void	*monitor_routine(void *arg);
 
-void	take_forks(t_philo *philo);
+int		take_forks(t_philo *philo);
 void	release_forks(t_philo *philo);
 void	eat(t_philo *philo);
 
