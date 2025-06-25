@@ -6,11 +6,14 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 15:36:23 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/22 20:15:04 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/06/25 16:39:03 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <sched.h>
 
 long	get_time(void)
 {
@@ -40,6 +43,12 @@ void	cleanup(t_data *data)
 	i = 0;
 	while (i < data->nb_philos)
 	{
+		release_forks(&data->philos[i]);
+		i++;
+	}
+	i = 0;
+	while (i < data->nb_philos)
+	{
 		pthread_mutex_destroy(&data->forks[i]);
 		i++;
 	}
@@ -54,6 +63,35 @@ void	safe_sleep(long time_in_ms, t_data *data)
 	long	start;
 
 	start = get_time();
-	while (!atomic_load(&data->stop) && (get_time() - start) < time_in_ms)
-		usleep(500);
+	while (!atomic_load_explicit(&data->stop, memory_order_acquire) && (get_time() - start) < time_in_ms)
+	{
+		usleep(1000);
+		sched_yield();
+	}
+}
+
+
+static int	lock_fork(pthread_mutex_t *m, _Bool *flag)
+{
+	int ret = pthread_mutex_lock(m);
+	if (ret == 0) 
+	{
+		atomic_store_explicit((_Atomic _Bool *)flag, 1, memory_order_release);
+	}
+	return (ret);
+}
+
+
+void	release_forks(t_philo *philo) 
+{
+	if (philo->has_left)
+	{
+		pthread_mutex_unlock(philo->left_fork);
+		atomic_store_explicit((_Atomic _Bool *)&philo->has_left, 0, memory_order_release);
+	}
+	if (philo->has_right)
+	{
+		pthread_mutex_unlock(philo->right_fork);
+		atomic_store_explicit((_Atomic _Bool *)&philo->has_right, 0, memory_order_release);
+	}
 }

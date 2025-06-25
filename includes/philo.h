@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 15:32:04 by anebbou           #+#    #+#             */
-/*   Updated: 2025/06/23 12:18:17 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/06/25 16:36:13 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@ typedef struct s_philo
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*right_fork;
 	t_data			*data;
+	_Bool			has_left;
+	_Bool			has_right;
 }				t_philo;
 
 struct s_data

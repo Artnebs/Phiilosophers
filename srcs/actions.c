@@ -6,7 +6,7 @@
 /*   By: anebbou <anebbou@student42.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/14 10:18:50 by anebbou           #+#    #+#             */
-/*   Updated: 2025/05/22 21:36:44 by anebbou          ###   ########.fr       */
+/*   Updated: 2025/06/25 16:36:07 by anebbou          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,40 +27,48 @@ int	take_forks(t_philo *philo)
 {
 	if (philo->data->nb_philos == 1)
 	{
-		if (!lock_fork(philo->left_fork, philo->data))
+		if (lock_fork(philo->right_fork, &philo->has_right) != 0)
 			return (0);
-		return (print_status(philo->data, philo->id, "has taken a fork"), 1);
+		print_status(philo->data, philo->id, "has taken a fork");
+		// Immediately release for 1 philosopher to avoid deadlock
+		release_forks(philo);
+		return (0);
 	}
 	if (philo->id % 2 == 0)
 	{
-		if (!lock_fork(philo->right_fork, philo->data))
+		if (lock_fork(philo->right_fork, &philo->has_right) != 0)
 			return (0);
 		print_status(philo->data, philo->id, "has taken a fork");
-		if (!lock_fork(philo->left_fork, philo->data))
-			return (pthread_mutex_unlock(philo->right_fork), 0);
+		if (atomic_load_explicit(&philo->data->stop, memory_order_acquire))
+		{
+			release_forks(philo);
+			return (0);
+		}
+		if (lock_fork(philo->left_fork, &philo->has_left) != 0)
+		{
+			release_forks(philo);
+			return (0);
+		}
 		print_status(philo->data, philo->id, "has taken a fork");
 	}
 	else
 	{
-		if (!lock_fork(philo->left_fork, philo->data))
+		if (lock_fork(philo->left_fork, &philo->has_left) != 0)
 			return (0);
 		print_status(philo->data, philo->id, "has taken a fork");
-		if (!lock_fork(philo->right_fork, philo->data))
-			return (pthread_mutex_unlock(philo->left_fork), 0);
+		if (atomic_load_explicit(&philo->data->stop, memory_order_acquire))
+		{
+			release_forks(philo);
+			return (0);
+		}
+		if (lock_fork(philo->right_fork, &philo->has_right) != 0)
+		{
+			release_forks(philo);
+			return (0);
+		}
 		print_status(philo->data, philo->id, "has taken a fork");
 	}
 	return (1);
-}
-
-void	release_forks(t_philo *philo)
-{
-	if (philo->data->nb_philos == 1)
-	{
-		pthread_mutex_unlock(philo->left_fork);
-		return ;
-	}
-	pthread_mutex_unlock(philo->left_fork);
-	pthread_mutex_unlock(philo->right_fork);
 }
 
 void	eat(t_philo *philo)
